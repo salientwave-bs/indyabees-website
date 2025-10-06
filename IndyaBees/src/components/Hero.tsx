@@ -2,12 +2,10 @@ import React from 'react';
 import { ArrowRight, Building2, Globe, FileText, Rocket } from 'lucide-react';
 
 const Hero = () => {
-  const scrollToContact = () => {
-    const element = document.getElementById('contact');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  const openWhatsApp = () => {
+  window.open("https://wa.me/919566656276", "_blank");
+};
+
 
   return (
     <section id="home" className="pt-16 bg-gradient-to-br from-orange-50 to-yellow-50 min-h-screen">
@@ -48,7 +46,7 @@ const Hero = () => {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <button 
-                onClick={scrollToContact}
+                onClick={openWhatsApp}
                 className="bg-orange-600 text-white px-8 py-4 rounded-full font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 group"
               >
                 <span>Talk to Us</span>
