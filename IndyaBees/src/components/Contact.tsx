@@ -1,35 +1,53 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, Linkedin, Youtube, Twitter } from 'lucide-react';
+import { db } from "../firebase";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    business: '',
-    message: ''
+    name: "", email: "", phone: "", business: "", message: ""
   });
+  const [loading, setLoading] = useState(false);
+  const [ok, setOk] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', formData);
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      business: '',
-      message: ''
-    });
+    setOk(null); setErr(null); setLoading(true);
+
+    try {
+      const payload = {
+        name: formData.name?.trim() ?? "",
+        email: formData.email?.trim() ?? "",
+        phone: formData.phone?.trim() || null,
+        business: formData.business || null,
+        message: formData.message?.trim() ?? "",
+        status: "new",
+        submittedAt: serverTimestamp(),
+        userAgent: navigator.userAgent,
+      };
+
+      await addDoc(collection(db, "contacts"), payload);
+
+      setOk("Thanks! We received your message.");
+      setFormData({ name: "", email: "", phone: "", business: "", message: "" });
+
+      // Auto-hide success after 5s
+      setTimeout(() => setOk(null), 5000);
+    } catch (e: any) {
+      console.error("[Firestore submit error]", e?.code, e?.message);
+      setErr(e?.message ?? "Submission failed. Please try again.");
+      // Auto-hide error after 7s
+      setTimeout(() => setErr(null), 7000);
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <section id="contact" className="py-20 bg-white">
@@ -113,7 +131,20 @@ const Contact = () => {
           {/* Contact Form */}
           <div className="bg-gray-50 rounded-2xl p-8">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h3>
-            
+             {/* Alerts */}
+            {ok && (
+              <div className="mb-4 rounded-xl border border-green-200 bg-green-50 p-4 text-green-800">
+                {ok}
+              </div>
+            )}
+            {err && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
+                {err}
+              </div>
+            )}
+            {/* SR-only live region for screen readers */}
+            <div aria-live="polite" className="sr-only">{ok || err}</div>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -204,11 +235,31 @@ const Contact = () => {
 
               <button
                 type="submit"
-                className="w-full bg-orange-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 group"
-              >
-                <span>Send Message</span>
-                <Send size={20} className="group-hover:translate-x-1 transition-transform" />
-              </button>
+                disabled={loading}
+                className={`w-full py-4 px-6 rounded-xl font-semibold transition-colors flex items-center justify-center space-x-2 group
+                  ${loading ? "bg-orange-400 cursor-not-allowed" : "bg-orange-600 hover:bg-orange-700 text-white"}`}
+                aria-busy={loading}
+                aria-disabled={loading}
+              > {loading ? (
+                  <>
+                    <svg
+                      className="h-5 w-5 animate-spin text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none" viewBox="0 0 24 24" role="status" aria-label="Loading"
+                    >
+                      <circle className="opacity-25" cx="12" cy="12" r="10"
+                        stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    <span className="ml-2">Sending…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Send Message</span>
+                    <Send size={20} className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}</button>
             </form>
           </div>
         </div>
